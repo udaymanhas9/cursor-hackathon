@@ -31,7 +31,7 @@ demo and clean extension points, not production hardening.
 | Integration surface | Real MCP server (Path A tool) **plus** an Express webhook (Path B) on the same HTTP server | ChatGPT calls tools over MCP; pixel/postback conversions arrive as plain HTTP and cannot come over MCP. |
 | Language/runtime | Node 20+, TypeScript, ESM | Matches the doc. |
 | MCP SDK | `@modelcontextprotocol/sdk` (stable single package): `McpServer` + `registerTool` + `StreamableHTTPServerTransport` | Stable, widely deployed; pinned at implementation time. |
-| Test runner | Vitest | Fast, TS-native, ESM-friendly. |
+| Tests | None | Per project owner: no automated tests in this project. Verification is manual (boot the server, exercise the tool + webhook). |
 
 ## 3. Architecture
 
@@ -76,7 +76,6 @@ src/
     types.ts               # shared types
   links/
     tracking.ts            # generateTrackedLink + click registry
-test/                      # Vitest unit tests mirroring src structure
 ```
 
 ## 4. Domain types (initial)
@@ -105,13 +104,13 @@ interface Notifier { notifyAdmins(input: { traceId: string; reason: string }): P
 ```
 
 - **Overmind mock:** deterministic. `scoreIntent` derives a pseudo score and
-  keywords/category from the prompt (e.g. keyword heuristics) so threshold tests
-  are repeatable. `evaluateFraudRisk` flags when revenue exceeds a configured
-  ceiling or the session has anomalous click counts.
+  keywords/category from the prompt (e.g. keyword heuristics) so behavior is
+  repeatable across runs. `evaluateFraudRisk` flags when revenue exceeds a
+  configured ceiling or the session has anomalous click counts.
 - **Tavily adapter:** uses `@tavily/core` `search()`; maps results to
   `MarketData`. On missing key or any failure/timeout, returns an empty
   `MarketData` (graceful degradation — never blocks the ad). A `MockSearch`
-  returns canned results for tests/no-key runs.
+  returns canned results for no-key runs.
 
 ### Queue
 
@@ -172,26 +171,28 @@ Env vars (all optional; sane defaults):
 
 A `.env.example` documents these.
 
-## 9. Testing (TDD, Vitest)
+## 9. Verification (manual, no automated tests)
 
-Tests are written before implementation per the TDD workflow. No network in
-tests (Tavily mocked). Coverage:
+Per the project owner, this project has **no automated tests**. Correctness is
+verified by running the app:
 
-- **serveAd:** below-threshold → no ad; above-threshold → parallel fetch + tracked
-  link; no inventory match → no ad; Tavily failure → ad still served with empty context.
-- **webhook:** valid payload → `202` and one job enqueued; malformed → `400`.
-- **attribution worker:** clean session → payout approved; flagged session →
-  notifier called, no payout.
-- **tracking:** `generateTrackedLink` produces a unique clickId and registers a
-  retrievable click; `stitchTimeline` reconstructs the session.
-- **memoryQueue:** `add` returns before handler runs; handler receives the data.
-- **overmind mock:** deterministic score for a given prompt.
+- Boot the server (`npm run dev`) and confirm `/mcp` and the webhook are mounted.
+- Drive the `serve_ad` tool via an MCP client (or `curl` against `/mcp`) and
+  observe: below-threshold prompt → no ad; above-threshold prompt → a
+  `trackingUrl` + context; no inventory match → no ad.
+- `POST /api/webhooks/conversion` with a seeded `clickId` → `202`, and observe
+  the worker log a payout approval; send a high/anomalous revenue → observe a
+  HITL notification instead.
+- `tsc --noEmit` (or `npm run build`) must pass — type-checking is the safety net
+  in place of tests.
+
+The `README.md` documents these manual steps and the ChatGPT connection.
 
 ## 10. Build & run
 
-- `npm run dev` — start server (tsx/ts-node watch).
+- `npm run dev` — start server (tsx watch).
 - `npm run build` — `tsc` to `dist/`.
-- `npm test` — Vitest.
+- `npm run typecheck` — `tsc --noEmit`.
 - `package.json`, `tsconfig.json` (ESM, strict), `.gitignore`, `.env.example`,
   and a short top-level `README.md` with run + ChatGPT-connection notes.
 
