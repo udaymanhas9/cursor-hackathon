@@ -83,11 +83,11 @@ test/                      # Vitest unit tests mirroring src structure
 
 ```ts
 interface Intent { score: number; keywords: string[]; category: string; }
-interface AdMatch { id: string; category: string; advertiser: string; landingUrl: string; bid: number; }
+interface AdMatch { id: string; category: string; advertiser: string; publisherId: string; landingUrl: string; bid: number; }
 interface MarketData { summary: string; results: { title: string; url: string; content: string }[]; }
 interface ConversionEvent { clickId: string; revenue: number; ts: string; }
-interface Click { clickId: string; sessionId: string; adId: string; ts: string; }
-interface Session { sessionId: string; clicks: Click[]; prompt?: string; }
+interface Click { clickId: string; sessionId: string; adId: string; publisherId: string; ts: string; }
+interface Session { sessionId: string; publisherId: string; clicks: Click[]; prompt?: string; }
 interface AuditResult { flaggedForHuman: boolean; traceId: string; reason?: string; }
 ```
 
@@ -128,7 +128,7 @@ interface Queue<T> {
 ### Repositories (in-memory)
 
 - `inventory.findBestAd(category): Promise<AdMatch | null>` — best bid in category.
-- `sessions.stitchTimeline(clickId): Promise<Session>` — assemble session from clicks.
+- `sessions.stitchTimeline(clickId): Promise<Session>` — assemble session from clicks; resolves `publisherId` from the click's ad.
 - `payouts.approve(publisherId, revenue): Promise<void>` — record an approved payout.
 - `clicks.register(click)` / lookup — populated by tracking-link generation + seed.
 
