@@ -1,7 +1,8 @@
-import { AuditResult, Intent, Session } from "../domain/types.js";
+import { AdMatch, AuditResult, Intent, Session } from "../domain/types.js";
 
 export interface OvermindService {
   scoreIntent(prompt: string): Promise<Intent>;
+  scoreFit(intent: Intent, ad: AdMatch): Promise<number>;
   evaluateFraudRisk(session: Session, revenue: number): Promise<AuditResult>;
 }
 
@@ -51,6 +52,15 @@ export class MockOvermind implements OvermindService {
       keywords: keywords.length > 0 ? keywords : [category],
       category,
     };
+  }
+
+  // Deterministic fit: fraction of the intent's keywords present in the ad's
+  // tags. A marathon-specific need scores low against a generic running ad.
+  async scoreFit(intent: Intent, ad: AdMatch): Promise<number> {
+    if (intent.keywords.length === 0) return 0;
+    const tagSet = new Set(ad.tags.map((t) => t.toLowerCase()));
+    const matched = intent.keywords.filter((k) => tagSet.has(k.toLowerCase()));
+    return matched.length / intent.keywords.length;
   }
 
   async evaluateFraudRisk(
