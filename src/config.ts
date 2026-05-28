@@ -3,6 +3,9 @@ export interface Config {
   intentThreshold: number;
   tavilyApiKey?: string;
   fraudRevenueCeiling: number;
+  holdoutRate: number;
+  fitThreshold: number;
+  defaultCpa: number;
 }
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
@@ -18,5 +21,8 @@ export function loadConfig(): Config {
     intentThreshold: numberFromEnv(process.env.INTENT_THRESHOLD, 0.85),
     tavilyApiKey: tavilyApiKey ? tavilyApiKey : undefined,
     fraudRevenueCeiling: numberFromEnv(process.env.FRAUD_REVENUE_CEILING, 1000),
+    holdoutRate: numberFromEnv(process.env.HOLDOUT_RATE, 0.1),
+    fitThreshold: numberFromEnv(process.env.FIT_THRESHOLD, 0.5),
+    defaultCpa: numberFromEnv(process.env.DEFAULT_CPA, 2.0),
   };
 }
