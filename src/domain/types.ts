@@ -21,7 +21,9 @@ export interface MarketData {
 }
 
 export interface ConversionEvent {
-  clickId: string;
+  clickId?: string;
+  sessionId?: string;
+  category?: string;
   revenue: number;
   ts: string;
 }

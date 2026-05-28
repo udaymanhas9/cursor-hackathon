@@ -6,8 +6,8 @@ export class TrackingLinkService {
   constructor(private clicks: ClickRepository) {}
 
   // Generates a unique clickId, registers the click, and returns the ad's
-  // landing URL with the clickId appended for later attribution.
-  generateTrackedLink(ad: AdMatch, sessionId: string): string {
+  // landing URL (with the clickId appended) plus the clickId itself.
+  generateTrackedLink(ad: AdMatch, sessionId: string): { url: string; clickId: string } {
     const clickId = randomUUID();
     const click: Click = {
       clickId,
@@ -20,6 +20,6 @@ export class TrackingLinkService {
 
     const url = new URL(ad.landingUrl);
     url.searchParams.set("clickId", clickId);
-    return url.toString();
+    return { url: url.toString(), clickId };
   }
 }
